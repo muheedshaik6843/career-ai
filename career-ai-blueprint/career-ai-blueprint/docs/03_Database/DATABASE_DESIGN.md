@@ -1,0 +1,1 @@
+Tables, relations, normalization, indexes.

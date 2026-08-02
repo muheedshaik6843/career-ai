@@ -1,0 +1,1 @@
+Widgets, analytics, quick actions.
