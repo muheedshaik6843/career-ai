@@ -23,7 +23,7 @@ services:
       - key: GEMINI_API_KEY
         sync: false
       - key: BACKEND_CORS_ORIGINS
-        sync: false
+        value: '["http://localhost:3000","https://career-ai-five-eta.vercel.app"]'
 
 databases:
   - name: career-ai-db
