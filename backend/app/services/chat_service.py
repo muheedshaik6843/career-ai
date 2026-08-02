@@ -69,8 +69,11 @@ class CareerChatService:
         target_role: Optional[str] = "Software Engineer",
         context: Optional[str] = None,
         resume: Optional[Resume] = None,
+        api_key: Optional[str] = None,
     ) -> ChatResponse:
-        resolved_api_key = settings.GEMINI_API_KEY or os.getenv("GEMINI_API_KEY")
+        # A visitor-provided key is used only for this request. It is never logged,
+        # persisted, or returned to the client.
+        resolved_api_key = api_key or settings.GEMINI_API_KEY or os.getenv("GEMINI_API_KEY")
         candidate_name = resume.full_name if (resume and resume.full_name) else "Candidate"
         skills = resume.skills if (resume and resume.skills) else ["Python", "TypeScript", "React", "FastAPI"]
         skills_str = ", ".join(skills[:6])

@@ -109,6 +109,7 @@ class ChatRequest(BaseModel):
     message: str
     target_role: Optional[str] = "Software Engineer"
     context: Optional[str] = None
+    api_key: Optional[str] = None
 
 
 class ChatResponse(BaseModel):

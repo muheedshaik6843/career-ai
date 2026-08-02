@@ -111,7 +111,8 @@ def career_chat(
         message=request.message,
         target_role=request.target_role,
         context=request.context,
-        resume=resume
+        resume=resume,
+        api_key=request.api_key
     )
     return APIResponse(
         success=True,

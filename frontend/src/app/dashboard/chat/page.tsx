@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useRef, useEffect } from "react";
-import { Sparkles, Send, Bot, User, Loader2 } from "lucide-react";
+import { Sparkles, Send, Bot, User, Loader2, Key, Check } from "lucide-react";
 import { api } from "@/lib/api";
 
 interface Message {
@@ -33,7 +33,15 @@ export default function ChatPage() {
 
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
+  const [apiKey, setApiKey] = useState("");
+  const [showKeyInput, setShowKeyInput] = useState(false);
+  const [keyReady, setKeyReady] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
+
+  const updateApiKey = (key: string) => {
+    setApiKey(key);
+    setKeyReady(Boolean(key.trim()));
+  };
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -59,6 +67,7 @@ export default function ChatPage() {
     try {
       const res = await api.post("/ai/chat", {
         message: textToSend,
+        api_key: apiKey.trim() || undefined,
       });
 
       if (res.data?.success) {
@@ -103,12 +112,47 @@ export default function ChatPage() {
         </div>
 
         <div className="flex items-center gap-2">
+          <button
+            type="button"
+            onClick={() => setShowKeyInput((value) => !value)}
+            aria-expanded={showKeyInput}
+            className="px-3 py-1.5 rounded-xl border border-slate-200 dark:border-slate-800 hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-300 text-xs font-medium flex items-center gap-1.5 transition-all shadow-sm"
+          >
+            {keyReady ? <Check className="w-3.5 h-3.5 text-emerald-500" /> : <Key className="w-3.5 h-3.5 text-amber-500" />}
+            <span>{keyReady ? "Your Gemini key is ready" : "Use your Gemini key"}</span>
+          </button>
           <span className="px-3 py-1.5 rounded-full bg-gradient-to-r from-blue-600 to-indigo-600 text-white text-xs font-bold flex items-center gap-1.5 shadow-md shadow-blue-500/20">
             <Sparkles className="w-3.5 h-3.5" />
             <span>Google Gemini AI</span>
           </span>
         </div>
       </div>
+
+      {showKeyInput && (
+        <div className="p-4 rounded-2xl bg-indigo-50/50 dark:bg-indigo-950/30 border border-indigo-200/80 dark:border-indigo-800/80 space-y-3 shrink-0">
+          <label htmlFor="gemini-api-key" className="text-xs font-bold text-indigo-950 dark:text-indigo-200 flex items-center gap-1.5">
+            <Key className="w-4 h-4 text-indigo-600 dark:text-indigo-400" />
+            Your Google Gemini API key
+          </label>
+          <div className="flex gap-2">
+            <input
+              id="gemini-api-key"
+              type="password"
+              value={apiKey}
+              onChange={(event) => updateApiKey(event.target.value)}
+              placeholder="AIzaSy..."
+              autoComplete="off"
+              className="flex-1 px-3 py-2 text-xs rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 focus:ring-2 focus:ring-indigo-500 outline-none"
+            />
+            <button type="button" onClick={() => setShowKeyInput(false)} className="px-3 py-2 rounded-xl bg-indigo-600 text-white text-xs font-semibold hover:bg-indigo-700 transition-all">
+              Done
+            </button>
+          </div>
+          <p className="text-[11px] text-slate-500 dark:text-slate-400">
+            Optional. Your key is sent only with your current chat request and is never saved in this browser or in our database.
+          </p>
+        </div>
+      )}
 
       {/* Messages Scroll Area */}
       <div className="flex-1 overflow-y-auto space-y-4 pr-2">
