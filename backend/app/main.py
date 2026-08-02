@@ -13,8 +13,10 @@ import app.models  # Ensure all models are imported so they register on Base
 from app.api.v1.router import api_router
 from app.schemas.common import APIResponse
 
-# Initialize Database Schema for local/dev fallback
-Base.metadata.create_all(bind=engine)
+# Local SQLite fallback: production deployments use the Render pre-deploy
+# Alembic migration instead of blocking app startup on database creation.
+if settings.ENVIRONMENT != "production":
+    Base.metadata.create_all(bind=engine)
 
 # Ensure upload directories exist
 os.makedirs("uploads/resumes", exist_ok=True)
