@@ -4,19 +4,19 @@ import jwt
 from passlib.context import CryptContext
 from app.core.config import settings
 
-pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
+pwd_context = CryptContext(
+    schemes=["bcrypt"],
+    deprecated="auto",
+    bcrypt__truncate_error=False  # Auto-truncate passwords > 72 bytes instead of raising
+)
 
 
 def verify_password(plain_password: str, hashed_password: str) -> bool:
-    # Bcrypt limit is 72 bytes
-    truncated_password = plain_password.encode('utf-8')[:72].decode('utf-8', errors='ignore')
-    return pwd_context.verify(truncated_password, hashed_password)
+    return pwd_context.verify(plain_password, hashed_password)
 
 
 def get_password_hash(password: str) -> str:
-    # Bcrypt limit is 72 bytes
-    truncated_password = password.encode('utf-8')[:72].decode('utf-8', errors='ignore')
-    return pwd_context.hash(truncated_password)
+    return pwd_context.hash(password)
 
 
 def create_access_token(subject: Union[str, Any], expires_delta: timedelta = None) -> str:
