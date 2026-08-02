@@ -2,10 +2,11 @@ from fastapi import APIRouter, Depends, status
 from fastapi.security import OAuth2PasswordRequestForm
 from sqlalchemy.orm import Session
 from app.api import deps
-from app.schemas.auth import UserRegister, UserLogin, Token, RefreshTokenRequest
+from app.schemas.auth import UserRegister, UserLogin, Token, RefreshTokenRequest, GoogleAuthRequest, GoogleCallbackRequest, GoogleTokenRequest
 from app.schemas.user import UserResponse
 from app.schemas.common import APIResponse
 from app.services.auth_service import auth_service
+from app.services.google_oauth_service import google_oauth_service
 
 router = APIRouter()
 
@@ -54,5 +55,61 @@ def refresh_token(
     return APIResponse(
         success=True,
         message="Token refreshed successfully.",
+        data=token
+    )
+
+
+# ─── Google OAuth Endpoints ────────────────────────────────────────────
+
+@router.get("/google/authorize")
+def google_authorize(
+    redirect_uri: str | None = None,
+    state: str | None = None
+):
+    """Get Google OAuth authorization URL"""
+    auth_url = google_oauth_service.get_authorization_url(redirect_uri=redirect_uri, state=state)
+    return {"authorization_url": auth_url}
+
+
+@router.post("/google/callback", response_model=APIResponse[Token])
+def google_callback(
+    callback: GoogleCallbackRequest,
+    db: Session = Depends(deps.get_db)
+):
+    """Handle Google OAuth callback with authorization code"""
+    # Exchange code for tokens
+    tokens = google_oauth_service.exchange_code_for_tokens(
+        code=callback.code,
+        redirect_uri=callback.redirect_uri
+    )
+
+    # Verify ID token and get user info
+    google_user = google_oauth_service.verify_id_token(tokens["id_token"])
+
+    # Authenticate or create user
+    token = google_oauth_service.authenticate_or_create_user(db, google_user)
+
+    return APIResponse(
+        success=True,
+        message="Google authentication successful.",
+        data=token
+    )
+
+
+@router.post("/google/token", response_model=APIResponse[Token])
+def google_token(
+    token_req: GoogleTokenRequest,
+    db: Session = Depends(deps.get_db)
+):
+    """Authenticate with Google ID token directly (for One Tap / Sign In with Google button)"""
+    # Verify ID token and get user info
+    google_user = google_oauth_service.verify_id_token(token_req.id_token)
+
+    # Authenticate or create user
+    token = google_oauth_service.authenticate_or_create_user(db, google_user)
+
+    return APIResponse(
+        success=True,
+        message="Google authentication successful.",
         data=token
     )

@@ -1,0 +1,27 @@
+Requirement already satisfied: google-auth in c:\users\muhee\appdata\local\programs\python\python310\lib\site-packages (2.55.0)
+Collecting google-auth-oauthlib
+  Downloading google_auth_oauthlib-1.4.0-py3-none-any.whl.metadata (2.6 kB)
+Requirement already satisfied: pyasn1-modules>=0.2.1 in c:\users\muhee\appdata\local\programs\python\python310\lib\site-packages (from google-auth) (0.4.2)
+Requirement already satisfied: cryptography>=38.0.3 in c:\users\muhee\appdata\local\programs\python\python310\lib\site-packages (from google-auth) (49.0.0)
+Collecting requests-oauthlib>=0.7.0 (from google-auth-oauthlib)
+  Downloading requests_oauthlib-2.0.0-py2.py3-none-any.whl.metadata (11 kB)
+Requirement already satisfied: cffi>=2.0.0 in c:\users\muhee\appdata\local\programs\python\python310\lib\site-packages (from cryptography>=38.0.3->google-auth) (2.0.0)
+Requirement already satisfied: typing-extensions>=4.13.2 in c:\users\muhee\appdata\local\programs\python\python310\lib\site-packages (from cryptography>=38.0.3->google-auth) (4.15.0)
+Requirement already satisfied: pycparser in c:\users\muhee\appdata\local\programs\python\python310\lib\site-packages (from cffi>=2.0.0->cryptography>=38.0.3->google-auth) (3.0)
+Requirement already satisfied: pyasn1<0.7.0,>=0.6.1 in c:\users\muhee\appdata\local\programs\python\python310\lib\site-packages (from pyasn1-modules>=0.2.1->google-auth) (0.6.3)
+Collecting oauthlib>=3.0.0 (from requests-oauthlib>=0.7.0->google-auth-oauthlib)
+  Downloading oauthlib-3.3.1-py3-none-any.whl.metadata (7.9 kB)
+Requirement already satisfied: requests>=2.0.0 in c:\users\muhee\appdata\local\programs\python\python310\lib\site-packages (from requests-oauthlib>=0.7.0->google-auth-oauthlib) (2.34.2)
+Requirement already satisfied: charset_normalizer<4,>=2 in c:\users\muhee\appdata\local\programs\python\python310\lib\site-packages (from requests>=2.0.0->requests-oauthlib>=0.7.0->google-auth-oauthlib) (3.4.4)
+Requirement already satisfied: idna<4,>=2.5 in c:\users\muhee\appdata\local\programs\python\python310\lib\site-packages (from requests>=2.0.0->requests-oauthlib>=0.7.0->google-auth-oauthlib) (3.11)
+Requirement already satisfied: urllib3<3,>=1.26 in c:\users\muhee\appdata\local\programs\python\python310\lib\site-packages (from requests>=2.0.0->requests-oauthlib>=0.7.0->google-auth-oauthlib) (2.6.3)
+Requirement already satisfied: certifi>=2023.5.7 in c:\users\muhee\appdata\local\programs\python\python310\lib\site-packages (from requests>=2.0.0->requests-oauthlib>=0.7.0->google-auth-oauthlib) (2026.1.4)
+Downloading google_auth_oauthlib-1.4.0-py3-none-any.whl (19 kB)
+Downloading requests_oauthlib-2.0.0-py2.py3-none-any.whl (24 kB)
+Downloading oauthlib-3.3.1-py3-none-any.whl (160 kB)
+Installing collected packages: oauthlib, requests-oauthlib, google-auth-oauthlib
+
+Successfully installed google-auth-oauthlib-1.4.0 oauthlib-3.3.1 requests-oauthlib-2.0.0
+
+[notice] A new release of pip is available: 26.0.1 -> 26.2
+[notice] To update, run: C:\Users\muhee\AppData\Local\Programs\Python\Python310\python.exe -m pip install --upgrade pip

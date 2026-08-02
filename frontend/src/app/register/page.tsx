@@ -8,7 +8,8 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
 import { api } from "@/lib/api";
 import { ThemeToggle } from "@/components/theme-toggle";
-import { Sparkles, User, Mail, Lock, Eye, EyeOff, ArrowRight, AlertCircle, Loader2, CheckCircle } from "lucide-react";
+import { GoogleSignInButton } from "@/components/google-signin-button";
+import { Sparkles, User, Mail, Lock, Eye, EyeOff, ArrowRight, AlertCircle, Loader2, CheckCircle, Chrome, Github } from "lucide-react";
 
 const registerSchema = z.object({
   full_name: z.string().min(2, "Full name must be at least 2 characters"),
@@ -191,6 +192,21 @@ export default function RegisterPage() {
                 <p className="text-xs text-red-500 mt-1">{errors.password.message}</p>
               )}
             </div>
+
+            {/* Divider */}
+            <div className="relative my-4">
+              <div className="absolute inset-0 flex items-center">
+                <div className="w-full border-t border-slate-200 dark:border-slate-800" />
+              </div>
+              <div className="relative flex justify-center text-xs uppercase tracking-wider text-slate-500 dark:text-slate-400">
+                <span className="bg-slate-50 dark:bg-slate-950 px-4">Or continue with</span>
+              </div>
+            </div>
+
+            {/* Google Sign In Button */}
+            <GoogleSignInButton
+              onSuccess={() => router.push("/dashboard")}
+            />
 
             <button
               type="submit"

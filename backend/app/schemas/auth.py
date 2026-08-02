@@ -43,3 +43,31 @@ class RefreshTokenRequest(BaseModel):
 class TokenPayload(BaseModel):
     sub: Optional[str] = None
     type: Optional[str] = None
+
+
+# Google OAuth Schemas
+class GoogleAuthRequest(BaseModel):
+    """Request to initiate Google OAuth flow"""
+    redirect_uri: str | None = None
+
+
+class GoogleCallbackRequest(BaseModel):
+    """Callback from Google OAuth with authorization code"""
+    code: str
+    redirect_uri: str | None = None
+
+
+class GoogleTokenRequest(BaseModel):
+    """Frontend sends Google ID token directly (for One Tap / Sign In with Google button)"""
+    id_token: str
+
+
+class GoogleUserInfo(BaseModel):
+    """Parsed Google user info from ID token"""
+    sub: str  # Google user ID
+    email: EmailStr
+    name: str
+    given_name: str | None = None
+    family_name: str | None = None
+    picture: str | None = None
+    email_verified: bool = False
