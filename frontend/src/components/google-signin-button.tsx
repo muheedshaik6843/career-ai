@@ -3,7 +3,8 @@
 import { GoogleLogin, CredentialResponse } from "@react-oauth/google";
 import { api } from "@/lib/api";
 import { useRouter } from "next/navigation";
-import { Chrome } from "lucide-react";
+import { Chrome, AlertCircle } from "lucide-react";
+import { useState } from "react";
 
 interface GoogleSignInButtonProps {
   variant?: "standard" | "icon_only";
@@ -15,8 +16,12 @@ export function GoogleSignInButton({
   onSuccess,
 }: GoogleSignInButtonProps) {
   const router = useRouter();
+  const [error, setError] = useState<string | null>(null);
+  const [isLoading, setIsLoading] = useState(false);
 
   const handleSuccess = async (credentialResponse: CredentialResponse) => {
+    setIsLoading(true);
+    setError(null);
     try {
       // Send Google ID token to our backend
       const response = await api.post("/auth/google/token", {
@@ -33,15 +38,21 @@ export function GoogleSignInButton({
         } else {
           router.push("/dashboard");
         }
+      } else {
+        const errMsg = response.data?.error || "Google authentication failed";
+        setError(errMsg);
       }
     } catch (error: any) {
       console.error("Google sign-in failed:", error);
-      throw error;
+      const errMsg = error.response?.data?.error || error.response?.data?.message || "Google sign-in failed";
+      setError(errMsg);
+    } finally {
+      setIsLoading(false);
     }
   };
 
   const handleError = () => {
-    console.error("Google OAuth error");
+    setError("Google OAuth error - please try again");
   };
 
   if (variant === "icon_only") {
@@ -59,15 +70,28 @@ export function GoogleSignInButton({
 
   // Standard button - use default Google button with custom className
   return (
-    <GoogleLogin
-      onSuccess={handleSuccess}
-      onError={handleError}
-      useOneTap={false}
-      theme="outline"
-      size="large"
-      text="continue_with"
-      shape="rectangular"
-      logo_alignment="left"
-    />
+    <div>
+      <GoogleLogin
+        onSuccess={handleSuccess}
+        onError={handleError}
+        useOneTap={false}
+        theme="outline"
+        size="large"
+        text="continue_with"
+        shape="rectangular"
+        logo_alignment="left"
+      />
+      {error && (
+        <div className="mt-3 p-3 rounded-lg bg-red-500/10 border border-red-500/20 text-red-600 dark:text-red-400 text-sm flex items-center space-x-2">
+          <AlertCircle className="w-4 h-4 flex-shrink-0" />
+          <span>{error}</span>
+        </div>
+      )}
+      {isLoading && (
+        <div className="mt-3 p-3 rounded-lg bg-blue-500/10 border border-blue-500/20 text-blue-600 dark:text-blue-400 text-sm flex items-center space-x-2">
+          <span className="animate-pulse">Signing in...</span>
+        </div>
+      )}
+    </div>
   );
 }
