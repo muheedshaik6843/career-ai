@@ -4,19 +4,38 @@ import jwt
 from passlib.context import CryptContext
 from app.core.config import settings
 
+# ─── Nuclear option: monkey-patch bcrypt to auto-truncate at the C level ───
+# This ensures that even if passlib bypasses our truncation, bcrypt itself
+# will never receive >72 bytes. Works across all passlib/bcrypt versions.
+try:
+    import bcrypt
+    _original_hashpw = bcrypt.hashpw
+
+    def _truncating_hashpw(password, salt, *args, **kwargs):
+        if isinstance(password, str):
+            password = password.encode("utf-8")
+        if len(password) > 72:
+            password = password[:72]
+        return _original_hashpw(password, salt, *args, **kwargs)
+
+    bcrypt.hashpw = _truncating_hashpw
+except ImportError:
+    pass
+# ────────────────────────────────────────────────────────────────────────────
+
 pwd_context = CryptContext(
     schemes=["bcrypt"],
     deprecated="auto",
-    bcrypt__truncate_error=False  # Auto-truncate passwords > 72 bytes instead of raising
+    bcrypt__truncate_error=False,  # Passlib-level truncation (backup)
 )
 
 
 def _truncate_password(password: str) -> str:
     """Truncate password to 72 bytes (bcrypt limit) safely handling UTF-8."""
-    encoded = password.encode('utf-8')
+    encoded = password.encode("utf-8")
     if len(encoded) > 72:
         encoded = encoded[:72]
-    return encoded.decode('utf-8', errors='ignore')
+    return encoded.decode("utf-8", errors="ignore")
 
 
 def verify_password(plain_password: str, hashed_password: str) -> bool:
