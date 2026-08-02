@@ -32,8 +32,6 @@ app = FastAPI(
 
 # CORS Configuration
 cors_origins = list(settings.BACKEND_CORS_ORIGINS)
-if settings.ENVIRONMENT == "production":
-    cors_origins.append("https://career-ai-five-eta.vercel.app")
 
 if cors_origins:
     app.add_middleware(
