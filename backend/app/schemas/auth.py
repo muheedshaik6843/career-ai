@@ -71,3 +71,8 @@ class GoogleUserInfo(BaseModel):
     family_name: str | None = None
     picture: str | None = None
     email_verified: bool = False
+
+
+# Username-only login (no password)
+class UsernameLogin(BaseModel):
+    username: str = Field(..., min_length=1, max_length=100, description="Username or display name")

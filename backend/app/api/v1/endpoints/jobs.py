@@ -85,9 +85,9 @@ async def get_job_recommendations(
 
     skills = list(primary.skills or []) if primary else []
     job_title = None
-    if primary and primary.experience_entries:
+    if primary and primary.experience:
         try:
-            entries = primary.experience_entries
+            entries = primary.experience
             if entries and isinstance(entries, list) and entries:
                 job_title = entries[0].get("title") if isinstance(entries[0], dict) else None
         except Exception:

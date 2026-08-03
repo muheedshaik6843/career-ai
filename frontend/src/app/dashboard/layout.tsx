@@ -60,12 +60,7 @@ export default function DashboardLayout({
           setOnlineStatus(true);
         }
       } catch (err) {
-        setUser({
-          id: "demo-user-123",
-          email: "alex.candidate@example.com",
-          full_name: "Alex Morgan",
-          role: "candidate",
-        });
+        // Backend now returns demo user when no token provided
         setOnlineStatus(false);
       }
     }

@@ -9,62 +9,43 @@ import * as z from "zod";
 import { api } from "@/lib/api";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { GoogleSignInButton } from "@/components/google-signin-button";
-import { Sparkles, User, Mail, Lock, Eye, EyeOff, ArrowRight, AlertCircle, Loader2, CheckCircle, Chrome, Github } from "lucide-react";
+import { Sparkles, User, ArrowRight, AlertCircle, Loader2, Chrome, Github } from "lucide-react";
 
 const registerSchema = z.object({
-  full_name: z.string().min(2, "Full name must be at least 2 characters"),
-  email: z.string().email("Please enter a valid email address"),
-  password: z.string().min(8, "Password must be at least 8 characters"),
-  role: z.enum(["candidate", "recruiter"]),
+  username: z.string().min(2, "Username must be at least 2 characters"),
 });
 
 type RegisterFormValues = z.infer<typeof registerSchema>;
 
 export default function RegisterPage() {
   const router = useRouter();
-  const [showPassword, setShowPassword] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
 
   const {
     register,
     handleSubmit,
-    setValue,
-    watch,
     formState: { errors },
   } = useForm<RegisterFormValues>({
     resolver: zodResolver(registerSchema),
-    defaultValues: {
-      role: "candidate",
-    },
   });
-
-  const selectedRole = watch("role");
 
   const onSubmit = async (data: RegisterFormValues) => {
     setIsLoading(true);
     setErrorMessage(null);
     try {
-      const regResponse = await api.post("/auth/register", data);
-      if (regResponse.data?.success) {
-        // Auto login
-        const loginResponse = await api.post("/auth/login", {
-          email: data.email,
-          password: data.password,
-        });
-        if (loginResponse.data?.success && loginResponse.data?.data) {
-          const { access_token, refresh_token } = loginResponse.data.data;
-          localStorage.setItem("access_token", access_token);
-          localStorage.setItem("refresh_token", refresh_token);
-          router.push("/dashboard");
-          return;
-        }
-        router.push("/login");
+      // Use the same username endpoint - it will create or find user
+      const response = await api.post("/auth/username", data);
+      if (response.data?.success && response.data?.data) {
+        const { access_token, refresh_token } = response.data.data;
+        localStorage.setItem("access_token", access_token);
+        localStorage.setItem("refresh_token", refresh_token);
+        router.push("/dashboard");
       } else {
-        setErrorMessage(regResponse.data?.error || "Registration failed.");
+        setErrorMessage(response.data?.error || "Registration failed.");
       }
     } catch (err: any) {
-      const msg = err.response?.data?.error || err.response?.data?.message || "Registration failed. Email may be taken.";
+      const msg = err.response?.data?.error || err.response?.data?.message || "Registration failed.";
       setErrorMessage(msg);
     } finally {
       setIsLoading(false);
@@ -87,7 +68,7 @@ export default function RegisterPage() {
           </Link>
           <h1 className="text-2xl font-bold tracking-tight">Create your account</h1>
           <p className="text-sm text-slate-600 dark:text-slate-400 mt-2">
-            Start optimizing your career with AI intelligence
+            Enter a username to start optimizing your career with AI intelligence
           </p>
         </div>
 
@@ -102,111 +83,21 @@ export default function RegisterPage() {
           <form onSubmit={handleSubmit(onSubmit)} className="space-y-5">
             <div>
               <label className="block text-xs font-semibold uppercase tracking-wider text-slate-600 dark:text-slate-400 mb-2">
-                Account Type
-              </label>
-              <div className="grid grid-cols-2 gap-3">
-                <button
-                  type="button"
-                  onClick={() => setValue("role", "candidate")}
-                  className={`p-3 rounded-xl border text-xs font-semibold flex items-center justify-center space-x-2 transition-all ${
-                    selectedRole === "candidate"
-                      ? "border-blue-500 bg-blue-500/10 text-blue-600 dark:text-blue-400"
-                      : "border-slate-200 dark:border-slate-800 hover:bg-slate-100 dark:hover:bg-slate-800"
-                  }`}
-                >
-                  <User className="w-4 h-4" />
-                  <span>Job Seeker</span>
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setValue("role", "recruiter")}
-                  className={`p-3 rounded-xl border text-xs font-semibold flex items-center justify-center space-x-2 transition-all ${
-                    selectedRole === "recruiter"
-                      ? "border-blue-500 bg-blue-500/10 text-blue-600 dark:text-blue-400"
-                      : "border-slate-200 dark:border-slate-800 hover:bg-slate-100 dark:hover:bg-slate-800"
-                  }`}
-                >
-                  <Sparkles className="w-4 h-4" />
-                  <span>Recruiter</span>
-                </button>
-              </div>
-            </div>
-
-            <div>
-              <label className="block text-xs font-semibold uppercase tracking-wider text-slate-600 dark:text-slate-400 mb-2">
-                Full Name
+                Username
               </label>
               <div className="relative">
                 <User className="w-5 h-5 absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" />
                 <input
-                  {...register("full_name")}
+                  {...register("username")}
                   type="text"
-                  placeholder="John Doe"
+                  placeholder="Enter your name"
                   className="w-full pl-11 pr-4 py-3 rounded-xl border border-slate-200 dark:border-slate-800 bg-white/50 dark:bg-slate-900/50 focus:ring-2 focus:ring-blue-500 text-sm outline-none transition-all"
                 />
               </div>
-              {errors.full_name && (
-                <p className="text-xs text-red-500 mt-1">{errors.full_name.message}</p>
+              {errors.username && (
+                <p className="text-xs text-red-500 mt-1">{errors.username.message}</p>
               )}
             </div>
-
-            <div>
-              <label className="block text-xs font-semibold uppercase tracking-wider text-slate-600 dark:text-slate-400 mb-2">
-                Email Address
-              </label>
-              <div className="relative">
-                <Mail className="w-5 h-5 absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" />
-                <input
-                  {...register("email")}
-                  type="email"
-                  placeholder="name@company.com"
-                  className="w-full pl-11 pr-4 py-3 rounded-xl border border-slate-200 dark:border-slate-800 bg-white/50 dark:bg-slate-900/50 focus:ring-2 focus:ring-blue-500 text-sm outline-none transition-all"
-                />
-              </div>
-              {errors.email && (
-                <p className="text-xs text-red-500 mt-1">{errors.email.message}</p>
-              )}
-            </div>
-
-            <div>
-              <label className="block text-xs font-semibold uppercase tracking-wider text-slate-600 dark:text-slate-400 mb-2">
-                Password
-              </label>
-              <div className="relative">
-                <Lock className="w-5 h-5 absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" />
-                <input
-                  {...register("password")}
-                  type={showPassword ? "text" : "password"}
-                  placeholder="••••••••"
-                  className="w-full pl-11 pr-11 py-3 rounded-xl border border-slate-200 dark:border-slate-800 bg-white/50 dark:bg-slate-900/50 focus:ring-2 focus:ring-blue-500 text-sm outline-none transition-all"
-                />
-                <button
-                  type="button"
-                  onClick={() => setShowPassword(!showPassword)}
-                  className="absolute right-3.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200"
-                >
-                  {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-                </button>
-              </div>
-              {errors.password && (
-                <p className="text-xs text-red-500 mt-1">{errors.password.message}</p>
-              )}
-            </div>
-
-            {/* Divider */}
-            <div className="relative my-4">
-              <div className="absolute inset-0 flex items-center">
-                <div className="w-full border-t border-slate-200 dark:border-slate-800" />
-              </div>
-              <div className="relative flex justify-center text-xs uppercase tracking-wider text-slate-500 dark:text-slate-400">
-                <span className="bg-slate-50 dark:bg-slate-950 px-4">Or continue with</span>
-              </div>
-            </div>
-
-            {/* Google Sign In Button */}
-            <GoogleSignInButton
-              onSuccess={() => router.push("/dashboard")}
-            />
 
             <button
               type="submit"

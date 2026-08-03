@@ -1,4 +1,4 @@
-from typing import Generator
+from typing import Generator, Optional
 from fastapi import Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordBearer
 from sqlalchemy.orm import Session
@@ -7,13 +7,29 @@ from app.core.security import decode_token
 from app.repositories.user_repository import user_repository
 from app.models.user import User, UserRole
 
-reusable_oauth2 = OAuth2PasswordBearer(tokenUrl="/api/v1/auth/login")
+reusable_oauth2 = OAuth2PasswordBearer(tokenUrl="/api/v1/auth/login", auto_error=False)
 
 
 def get_current_user(
     db: Session = Depends(get_db),
     token: str = Depends(reusable_oauth2)
 ) -> User:
+    # If no token provided, create/return a demo user
+    if not token:
+        # Return or create a demo user
+        demo_email = "demo@example.com"
+        user = user_repository.get_by_email(db, email=demo_email)
+        if not user:
+            user_data = {
+                "email": demo_email,
+                "hashed_password": "",
+                "full_name": "Demo User",
+                "role": "candidate",
+                "is_active": True,
+            }
+            user = user_repository.create(db, obj_in=user_data)
+        return user
+    
     payload = decode_token(token)
     if not payload or payload.get("type") != "access":
         raise HTTPException(

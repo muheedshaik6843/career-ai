@@ -103,5 +103,9 @@ def test_delete_nonexistent_resume(client):
 
 
 def test_resume_requires_auth(client):
+    # With the new username-only auth, no token returns a demo user (200 OK)
+    # This is the new intended behavior - no auth required, falls back to demo
     response = client.get("/api/v1/resumes")
-    assert response.status_code == status.HTTP_401_UNAUTHORIZED
+    assert response.status_code == status.HTTP_200_OK
+    data = response.json()
+    assert data["success"] is True

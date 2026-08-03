@@ -2,11 +2,13 @@ from fastapi import APIRouter, Depends, status
 from fastapi.security import OAuth2PasswordRequestForm
 from sqlalchemy.orm import Session
 from app.api import deps
-from app.schemas.auth import UserRegister, UserLogin, Token, RefreshTokenRequest, GoogleAuthRequest, GoogleCallbackRequest, GoogleTokenRequest
+from app.schemas.auth import UserRegister, UserLogin, Token, RefreshTokenRequest, GoogleAuthRequest, GoogleCallbackRequest, GoogleTokenRequest, UsernameLogin
 from app.schemas.user import UserResponse
 from app.schemas.common import APIResponse
 from app.services.auth_service import auth_service
 from app.services.google_oauth_service import google_oauth_service
+from app.repositories.user_repository import user_repository
+from app.models.user import User
 
 router = APIRouter()
 
@@ -56,6 +58,43 @@ def refresh_token(
         success=True,
         message="Token refreshed successfully.",
         data=token
+    )
+
+
+@router.post("/username", response_model=APIResponse[Token])
+def username_login(
+    login_in: UsernameLogin,
+    db: Session = Depends(deps.get_db)
+):
+    """Simple username-only login - creates or finds user by username"""
+    # Try to find user by email (using username as email-like identifier)
+    # or by full_name. For simplicity, use username as email.
+    user = user_repository.get_by_email(db, email=f"{login_in.username.lower().replace(' ', '.')}@example.com")
+    
+    if not user:
+        # Create new user
+        user_data = {
+            "email": f"{login_in.username.lower().replace(' ', '.')}@example.com",
+            "hashed_password": "",  # No password
+            "full_name": login_in.username,
+            "role": "candidate",
+            "is_active": True,
+        }
+        user = user_repository.create(db, obj_in=user_data)
+    
+    # Generate tokens
+    from app.core.security import create_access_token, create_refresh_token
+    access_token = create_access_token(subject=user.id)
+    refresh_token = create_refresh_token(subject=user.id)
+    
+    return APIResponse(
+        success=True,
+        message=f"Welcome, {login_in.username}!",
+        data=Token(
+            access_token=access_token,
+            refresh_token=refresh_token,
+            token_type="bearer"
+        )
     )
 
 
