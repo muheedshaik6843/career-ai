@@ -5,7 +5,7 @@
   "framework": "nextjs",
   "regions": ["sin1"],
   "env": {
-    "NEXT_PUBLIC_API_URL": "https://career-ai-api.onrender.com/api/v1"
+    "NEXT_PUBLIC_API_URL": "https://career-ai-api-lmbh.onrender.com/api/v1"
   },
   "headers": [
     {
@@ -29,7 +29,7 @@
   "rewrites": [
     {
       "source": "/api/v1/(.*)",
-      "destination": "https://career-ai-api.onrender.com/api/v1/$1"
+      "destination": "https://career-ai-api-lmbh.onrender.com/api/v1/$1"
     }
   ]
 }
