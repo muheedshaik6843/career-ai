@@ -1,4 +1,5 @@
 import os
+from contextlib import asynccontextmanager
 from fastapi import FastAPI, Request, status
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
@@ -12,14 +13,26 @@ from app.core.database import engine, Base
 import app.models  # Ensure all models are imported so they register on Base
 from app.api.v1.router import api_router
 from app.schemas.common import APIResponse
+from alembic.config import Config
+from alembic import command
 
-# Local SQLite fallback: production deployments use the Render pre-deploy
-# Alembic migration instead of blocking app startup on database creation.
-if settings.ENVIRONMENT != "production":
-    Base.metadata.create_all(bind=engine)
-
-# Ensure upload directories exist
-os.makedirs("uploads/resumes", exist_ok=True)
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    # Startup: Run database migrations
+    try:
+        logger.info("Running database migrations...")
+        alembic_cfg = Config("alembic.ini")
+        command.upgrade(alembic_cfg, "head")
+        logger.info("Database migrations completed successfully")
+    except Exception as e:
+        logger.warning(f"Migration failed (tables may already exist): {e}")
+        # Fallback: create tables directly
+        Base.metadata.create_all(bind=engine)
+    
+    yield
+    
+    # Shutdown
+    logger.info("Application shutdown")
 
 app = FastAPI(
     title=settings.PROJECT_NAME,
@@ -27,7 +40,8 @@ app = FastAPI(
     openapi_url=f"{settings.API_V1_STR}/openapi.json",
     docs_url="/docs",
     redoc_url="/redoc",
-    description="Production-grade AI Career Assistant SaaS Backend REST API"
+    description="Production-grade AI Career Assistant SaaS Backend REST API",
+    lifespan=lifespan
 )
 
 # CORS Configuration
