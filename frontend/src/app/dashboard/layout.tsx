@@ -188,9 +188,7 @@ export default function DashboardLayout({
         />
       )}
       <aside
-        className={`fixed top-0 left-0 h-full w-72 bg-white dark:bg-slate-900 border-r border-slate-200/80 dark:border-slate-800/80 p-5 z-50 flex flex-col transition-transform duration-300 lg:hidden ${
-          isSidebarOpen ? "translate-x-0" : "-translate-x-full"
-        }`}
+        className={`fixed top-0 left-0 h-full w-72 bg-white dark:bg-slate-900 border-r border-slate-200/80 dark:border-slate-800/80 p-5 z-50 flex flex-col transition-transform duration-300 lg:hidden ${isSidebarOpen ? "translate-x-0" : "-translate-x-full"}`}
       >
         <button
           onClick={() => setIsSidebarOpen(false)}
@@ -224,11 +222,7 @@ export default function DashboardLayout({
 
           <div className="flex items-center space-x-3 relative">
             {/* Live indicator */}
-            <div className={`hidden sm:flex items-center space-x-1.5 px-3 py-1.5 rounded-full text-xs font-semibold ${
-              onlineStatus
-                ? "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400"
-                : "bg-amber-500/10 text-amber-600 dark:text-amber-400"
-            }`}>
+            <div className={`hidden sm:flex items-center space-x-1.5 px-3 py-1.5 rounded-full text-xs font-semibold ${onlineStatus ? "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400" : "bg-amber-500/10 text-amber-600 dark:text-amber-400"}`}>
               <Wifi className="w-3.5 h-3.5" />
               <span>{onlineStatus ? "Live Jobs Connected" : "Offline"}</span>
             </div>
