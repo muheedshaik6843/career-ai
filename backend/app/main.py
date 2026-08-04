@@ -20,6 +20,7 @@ from app.api.v1.router import api_router
 from app.schemas.common import APIResponse
 from alembic.config import Config
 from alembic import command
+from sqlalchemy import text
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -32,16 +33,122 @@ async def lifespan(app: FastAPI):
         logger.info("Database migrations completed successfully")
     except Exception as e:
         logger.warning(f"Alembic migration failed: {e}")
-        # Fallback: create tables directly - this will create all tables defined in models
-        logger.info("Falling back to Base.metadata.create_all...")
-        # Explicitly create all tables - this ensures all models are imported
+        # Fallback: create tables directly using raw SQL
+        logger.info("Falling back to raw SQL table creation...")
+        
+        # Create all tables defined in models
         Base.metadata.create_all(bind=engine)
         logger.info("Base.metadata.create_all completed - tables created")
+        
         # Verify tables exist
         from sqlalchemy import inspect
         inspector = inspect(engine)
         tables = inspector.get_table_names()
         logger.info(f"Created tables: {tables}")
+        
+        # If tables still missing, create them with raw SQL
+        required_tables = ['job_applications', 'interview_sessions', 'job_descriptions', 'job_matches']
+        missing_tables = [t for t in required_tables if t not in tables]
+        if missing_tables:
+            logger.warning(f"Missing tables: {missing_tables}, creating with raw SQL...")
+            with engine.begin() as conn:
+                # Create job_applications
+                if 'job_applications' in missing_tables:
+                    conn.execute(text("""
+                        CREATE TABLE IF NOT EXISTS job_applications (
+                            id VARCHAR(36) PRIMARY KEY,
+                            user_id VARCHAR(36) NOT NULL REFERENCES users(id),
+                            job_title VARCHAR(255) NOT NULL,
+                            company VARCHAR(255) NOT NULL,
+                            location VARCHAR(255),
+                            salary VARCHAR(100),
+                            url VARCHAR(1000),
+                            status VARCHAR(50) DEFAULT 'saved' NOT NULL,
+                            applied_date TIMESTAMP WITH TIME ZONE,
+                            notes TEXT,
+                            match_score FLOAT,
+                            created_at TIMESTAMP WITH TIME ZONE NOT NULL,
+                            updated_at TIMESTAMP WITH TIME ZONE NOT NULL,
+                            is_deleted BOOLEAN DEFAULT FALSE NOT NULL
+                        )
+                    """))
+                    conn.execute(text("CREATE INDEX IF NOT EXISTS ix_job_applications_user_id ON job_applications (user_id)"))
+                    logger.info("Created job_applications table")
+                
+                # Create interview_sessions
+                if 'interview_sessions' in missing_tables:
+                    conn.execute(text("""
+                        CREATE TABLE IF NOT EXISTS interview_sessions (
+                            id VARCHAR(36) PRIMARY KEY,
+                            user_id VARCHAR(36) NOT NULL REFERENCES users(id),
+                            target_role VARCHAR(255) NOT NULL,
+                            experience_level VARCHAR(100),
+                            difficulty VARCHAR(50) DEFAULT 'Medium' NOT NULL,
+                            questions JSON NOT NULL,
+                            answers JSON,
+                            overall_score FLOAT,
+                            strengths JSON,
+                            areas_for_improvement JSON,
+                            status VARCHAR(50) DEFAULT 'in_progress' NOT NULL,
+                            created_at TIMESTAMP WITH TIME ZONE NOT NULL,
+                            updated_at TIMESTAMP WITH TIME ZONE NOT NULL,
+                            is_deleted BOOLEAN DEFAULT FALSE NOT NULL
+                        )
+                    """))
+                    conn.execute(text("CREATE INDEX IF NOT EXISTS ix_interview_sessions_user_id ON interview_sessions (user_id)"))
+                    logger.info("Created interview_sessions table")
+                
+                # Create job_descriptions
+                if 'job_descriptions' in missing_tables:
+                    conn.execute(text("""
+                        CREATE TABLE IF NOT EXISTS job_descriptions (
+                            id VARCHAR(36) PRIMARY KEY,
+                            title VARCHAR(255) NOT NULL,
+                            company VARCHAR(255) NOT NULL,
+                            location VARCHAR(255),
+                            salary_range VARCHAR(100),
+                            job_type VARCHAR(100),
+                            description TEXT NOT NULL,
+                            required_skills JSON,
+                            preferred_skills JSON,
+                            keywords JSON,
+                            experience_level VARCHAR(100),
+                            education_required VARCHAR(255),
+                            created_at TIMESTAMP WITH TIME ZONE NOT NULL,
+                            updated_at TIMESTAMP WITH TIME ZONE NOT NULL,
+                            is_deleted BOOLEAN DEFAULT FALSE NOT NULL
+                        )
+                    """))
+                    logger.info("Created job_descriptions table")
+                
+                # Create job_matches
+                if 'job_matches' in missing_tables:
+                    conn.execute(text("""
+                        CREATE TABLE IF NOT EXISTS job_matches (
+                            id VARCHAR(36) PRIMARY KEY,
+                            user_id VARCHAR(36) NOT NULL REFERENCES users(id),
+                            resume_id VARCHAR(36) REFERENCES resumes(id),
+                            job_id VARCHAR(36) REFERENCES job_descriptions(id),
+                            match_score FLOAT NOT NULL,
+                            skill_score FLOAT NOT NULL,
+                            experience_score FLOAT NOT NULL,
+                            education_score FLOAT NOT NULL,
+                            matching_skills JSON,
+                            missing_required_skills JSON,
+                            missing_preferred_skills JSON,
+                            missing_keywords JSON,
+                            recommendations JSON,
+                            created_at TIMESTAMP WITH TIME ZONE NOT NULL,
+                            updated_at TIMESTAMP WITH TIME ZONE NOT NULL,
+                            is_deleted BOOLEAN DEFAULT FALSE NOT NULL
+                        )
+                    """))
+                    conn.execute(text("CREATE INDEX IF NOT EXISTS ix_job_matches_user_id ON job_matches (user_id)"))
+                    conn.execute(text("CREATE INDEX IF NOT EXISTS ix_job_matches_resume_id ON job_matches (resume_id)"))
+                    conn.execute(text("CREATE INDEX IF NOT EXISTS ix_job_matches_job_id ON job_matches (job_id)"))
+                    logger.info("Created job_matches table")
+            
+            logger.info("Raw SQL table creation completed")
     
     yield
     
