@@ -34,8 +34,14 @@ async def lifespan(app: FastAPI):
         logger.warning(f"Alembic migration failed: {e}")
         # Fallback: create tables directly - this will create all tables defined in models
         logger.info("Falling back to Base.metadata.create_all...")
+        # Explicitly create all tables - this ensures all models are imported
         Base.metadata.create_all(bind=engine)
         logger.info("Base.metadata.create_all completed - tables created")
+        # Verify tables exist
+        from sqlalchemy import inspect
+        inspector = inspect(engine)
+        tables = inspector.get_table_names()
+        logger.info(f"Created tables: {tables}")
     
     yield
     
