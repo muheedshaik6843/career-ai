@@ -7,13 +7,13 @@ services:
     rootDir: backend
     buildCommand: pip install -r requirements.txt
     preDeployCommand: alembic upgrade head
-    startCommand: uvicorn app.main:app --host 0.0.0.0 --port $PORT
+    startCommand: uvcorn app.main:app --host 0.0.0.0 --port $PORT
     autoDeployTrigger: commit
     envVars:
       - key: PYTHON_VERSION
-        value: 3.12.0
+        value: "3.12.0"
       - key: ENVIRONMENT
-        value: production
+        value: "production"
       - key: SECRET_KEY
         generateValue: true
       - key: DATABASE_URL
@@ -27,13 +27,13 @@ services:
       - key: GOOGLE_CLIENT_SECRET
         sync: false
       - key: GOOGLE_REDIRECT_URI
-        value: "https://career-ai-api-xyz.onrender.com/api/v1/auth/google/callback"
+        value: "https://career-ai-api-lmbh.onrender.com/api/v1/auth/google/callback"
       - key: BACKEND_CORS_ORIGINS
-        value: '["https://career-ai-five-eta.vercel.app"]'
+        value: '["https://career-ai-git-main-muheedshaik6843s-projects.vercel.app", "https://career-myihiwz6g-muheedshaik6843s-projects.vercel.app", "https://career-ai-five-eta.vercel.app"]'
 
 databases:
   - name: career-ai-db
     databaseName: career_ai
     user: career_ai
     plan: free
-# Auto-deploy trigger: v2 ensure migrations run with correct DATABASE_URL
+# Auto-deploy trigger: v3 CORS fix for production Vercel URL
