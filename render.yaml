@@ -36,4 +36,4 @@ databases:
     databaseName: career_ai
     user: career_ai
     plan: free
-# Auto-deploy trigger: ensure migrations run with correct DATABASE_URL
+# Auto-deploy trigger: v2 ensure migrations run with correct DATABASE_URL
