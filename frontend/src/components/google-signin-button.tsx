@@ -7,19 +7,22 @@ import { Chrome, AlertCircle } from "lucide-react";
 import { useState } from "react";
 
 interface GoogleSignInButtonProps {
-  variant?: "standard" | "icon_only";
+  variant?: "standard" | "icon_only" | "outline";
   onSuccess?: () => void;
+  disabled?: boolean;
 }
 
 export function GoogleSignInButton({
   variant = "standard",
   onSuccess,
+  disabled = false,
 }: GoogleSignInButtonProps) {
   const router = useRouter();
   const [error, setError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
 
   const handleSuccess = async (credentialResponse: CredentialResponse) => {
+    if (disabled) return;
     setIsLoading(true);
     setError(null);
     try {
@@ -32,7 +35,7 @@ export function GoogleSignInButton({
         const { access_token, refresh_token } = response.data.data;
         localStorage.setItem("access_token", access_token);
         localStorage.setItem("refresh_token", refresh_token);
-        
+
         if (onSuccess) {
           onSuccess();
         } else {
@@ -57,20 +60,22 @@ export function GoogleSignInButton({
 
   if (variant === "icon_only") {
     return (
-      <GoogleLogin
-        onSuccess={handleSuccess}
-        onError={handleError}
-        useOneTap={false}
-        theme="filled_black"
-        size="large"
-        logo_alignment="center"
-      />
+      <div style={{ pointerEvents: disabled || isLoading ? 'none' : 'auto', opacity: disabled || isLoading ? 0.5 : 1 }}>
+        <GoogleLogin
+          onSuccess={handleSuccess}
+          onError={handleError}
+          useOneTap={false}
+          theme="filled_black"
+          size="large"
+          logo_alignment="center"
+        />
+      </div>
     );
   }
 
   // Standard button - use default Google button with custom className
   return (
-    <div>
+    <div style={{ pointerEvents: disabled || isLoading ? 'none' : 'auto', opacity: disabled || isLoading ? 0.5 : 1 }}>
       <GoogleLogin
         onSuccess={handleSuccess}
         onError={handleError}

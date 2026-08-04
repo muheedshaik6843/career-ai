@@ -30,6 +30,12 @@ class UserLogin(BaseModel):
         return v
 
 
+class EmailLogin(BaseModel):
+    """Email/password login"""
+    email: EmailStr
+    password: str
+
+
 class Token(BaseModel):
     access_token: str
     refresh_token: str

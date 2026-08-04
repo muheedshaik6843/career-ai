@@ -1,8 +1,9 @@
 import re
-from typing import List, Dict, Any, Tuple
+import json
+import math
+from typing import List, Dict, Any, Tuple, Optional
 from app.models.resume import Resume
 from app.schemas.job import SkillGapBreakdown, JobMatchResponse
-
 
 # Extended skill vocabulary for keyword matching
 KNOWN_SKILLS = [
@@ -20,6 +21,61 @@ KNOWN_SKILLS = [
 
 
 class JobMatchingService:
+    def __init__(self):
+        self._embedding_model = None
+        self._resume_embedding_cache = {}
+
+    def _get_embedding_model(self):
+        """Lazy load sentence transformer model"""
+        if self._embedding_model is None:
+            try:
+                from sentence_transformers import SentenceTransformer
+                self._embedding_model = SentenceTransformer('all-MiniLM-L6-v2')
+            except ImportError:
+                self._embedding_model = None
+        return self._embedding_model
+
+    def _get_embedding(self, text: str) -> Optional[List[float]]:
+        """Get embedding for text using sentence transformer"""
+        model = self._get_embedding_model()
+        if model is None:
+            return None
+        try:
+            embedding = model.encode(text, convert_to_tensor=False)
+            return embedding.tolist()
+        except Exception:
+            return None
+
+    def _cosine_similarity(self, a: List[float], b: List[float]) -> float:
+        """Calculate cosine similarity between two vectors"""
+        dot_product = sum(x * y for x, y in zip(a, b))
+        norm_a = math.sqrt(sum(x * x for x in a))
+        norm_b = math.sqrt(sum(x * x for x in b))
+        if norm_a == 0 or norm_b == 0:
+            return 0.0
+        return dot_product / (norm_a * norm_b)
+
+    def get_resume_embedding(self, resume: Resume) -> Optional[List[float]]:
+        """Get or compute embedding for resume"""
+        cache_key = f"{resume.id}_{resume.updated_at}"
+        if cache_key in self._resume_embedding_cache:
+            return self._resume_embedding_cache[cache_key]
+
+        # Create text representation of resume
+        resume_text = f"{resume.full_name or ''} {resume.summary or ''} "
+        if resume.skills:
+            resume_text += " ".join(resume.skills) + " "
+        if resume.experience:
+            for exp in resume.experience:
+                resume_text += f"{exp.get('title', '')} {exp.get('description', '')} "
+        if resume.education:
+            for edu in resume.education:
+                resume_text += f"{edu.get('degree', '')} {edu.get('field', '')} "
+
+        embedding = self._get_embedding(resume_text[:2000])  # Limit length
+        if embedding:
+            self._resume_embedding_cache[cache_key] = embedding
+        return embedding
 
     def extract_job_skills(self, description: str) -> Tuple[List[str], List[str]]:
         """
@@ -72,6 +128,7 @@ class JobMatchingService:
     def analyze_match(self, job_title: str, company: str, job_description: str, resume: Resume) -> JobMatchResponse:
         """
         Perform AI Skill Gap Analysis and Match Scoring between job description and resume.
+        Now includes semantic similarity scoring.
         """
         req_skills, pref_skills = self.extract_job_skills(job_description)
         job_keywords = self.extract_keywords(job_description)
@@ -79,7 +136,7 @@ class JobMatchingService:
         # Candidate skills normalized
         resume_skills_raw = resume.skills or []
         resume_text = (resume.raw_text or "").lower()
-        
+
         # Combine explicit skills and extracted skills from raw text
         candidate_skills_set = set()
         for s in resume_skills_raw:
@@ -129,8 +186,21 @@ class JobMatchingService:
         # Education score
         education_score = 85.0 if resume.education else 60.0
 
-        # Weighted Total Score
-        match_score = round((skill_score * 0.50) + (experience_score * 0.35) + (education_score * 0.15), 1)
+        # Semantic similarity score (embedding-based)
+        semantic_score = 75.0
+        resume_embedding = self.get_resume_embedding(resume)
+        if resume_embedding:
+            job_embedding = self._get_embedding(job_description[:2000])
+            if job_embedding:
+                semantic_score = min(100.0, round(self._cosine_similarity(resume_embedding, job_embedding) * 100.0, 1))
+
+        # Weighted Total Score (including semantic similarity)
+        match_score = round(
+            (skill_score * 0.40) + 
+            (experience_score * 0.25) + 
+            (education_score * 0.10) + 
+            (semantic_score * 0.25), 1
+        )
 
         # Generate Actionable Recommendations
         recommendations = []
@@ -164,6 +234,52 @@ class JobMatchingService:
             match_score=match_score,
             breakdown=breakdown
         )
+
+    def recommend_jobs_for_resume(self, resume: Resume, jobs: List[Dict[str, Any]], top_k: int = 10) -> List[Dict[str, Any]]:
+        """
+        Recommend jobs based on resume using semantic similarity + skill matching.
+        Returns jobs sorted by match_score descending.
+        """
+        if not jobs:
+            return []
+
+        # Get resume embedding once
+        resume_embedding = self.get_resume_embedding(resume)
+        
+        scored_jobs = []
+        for job in jobs:
+            # Get match analysis for each job
+            match_response = self.analyze_match(
+                job_title=job.get("title", ""),
+                company=job.get("company", ""),
+                job_description=job.get("description", ""),
+                resume=resume
+            )
+            
+            # Add semantic score if we have embeddings
+            semantic_score = 75.0
+            if resume_embedding:
+                job_embedding = self._get_embedding(job.get("description", "")[:2000])
+                if job_embedding and resume_embedding:
+                    dot_product = sum(x * y for x, y in zip(resume_embedding, job_embedding))
+                    norm_a = math.sqrt(sum(x * x for x in resume_embedding))
+                    norm_b = math.sqrt(sum(x * x for x in job_embedding))
+                    if norm_a > 0 and norm_b > 0:
+                        semantic_score = min(100.0, round((dot_product / (norm_a * norm_b)) * 100.0, 1))
+            
+            job_with_score = {
+                **job,
+                "match_score": match_response.match_score,
+                "skill_score": match_response.breakdown.skill_score,
+                "semantic_score": semantic_score,
+                "breakdown": match_response.breakdown.model_dump(),
+                "recommendations": match_response.breakdown.recommendations
+            }
+            scored_jobs.append(job_with_score)
+        
+        # Sort by match_score descending
+        scored_jobs.sort(key=lambda x: x.get("match_score", 0), reverse=True)
+        return scored_jobs[:top_k]
 
 
 job_matching_service = JobMatchingService()

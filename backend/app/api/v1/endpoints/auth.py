@@ -2,7 +2,7 @@ from fastapi import APIRouter, Depends, status
 from fastapi.security import OAuth2PasswordRequestForm
 from sqlalchemy.orm import Session
 from app.api import deps
-from app.schemas.auth import UserRegister, UserLogin, Token, RefreshTokenRequest, GoogleAuthRequest, GoogleCallbackRequest, GoogleTokenRequest, UsernameLogin
+from app.schemas.auth import UserRegister, UserLogin, Token, RefreshTokenRequest, GoogleAuthRequest, GoogleCallbackRequest, GoogleTokenRequest, UsernameLogin, EmailLogin
 from app.schemas.user import UserResponse
 from app.schemas.common import APIResponse
 from app.services.auth_service import auth_service
@@ -32,6 +32,20 @@ def login(
     db: Session = Depends(deps.get_db)
 ):
     token = auth_service.authenticate_user(db, login_data=login_in)
+    return APIResponse(
+        success=True,
+        message="Authentication successful.",
+        data=token
+    )
+
+
+@router.post("/email-login", response_model=APIResponse[Token])
+def email_login(
+    login_in: EmailLogin,
+    db: Session = Depends(deps.get_db)
+):
+    """Email/password login endpoint"""
+    token = auth_service.authenticate_user(db, login_data=UserLogin(email=login_in.email, password=login_in.password))
     return APIResponse(
         success=True,
         message="Authentication successful.",

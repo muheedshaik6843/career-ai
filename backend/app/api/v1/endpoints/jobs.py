@@ -114,6 +114,51 @@ async def get_job_recommendations(
     )
 
 
+@router.get("/recommendations/resume", response_model=APIResponse[List[dict]])
+async def get_resume_based_recommendations(
+    location: str = Query(DEFAULT_LOCATION, description="Job location e.g. 'Hyderabad, India', 'Remote', 'Worldwide'"),
+    limit: int = Query(15, ge=1, le=50),
+    top_k: int = Query(10, ge=1, le=20),
+    current_user: User = Depends(deps.get_current_user),
+    db: Session = Depends(deps.get_db)
+):
+    """
+    Get job recommendations based on the candidate's primary resume using
+    semantic similarity + skill matching. This uses the new embedding-based
+    recommendation engine for better matching.
+    """
+    resumes = resume_service.get_user_resumes(db, user_id=current_user.id)
+    primary = next((r for r in resumes if r.is_primary), resumes[0]) if resumes else None
+
+    if not primary:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="No resume found. Please upload a resume first to get personalized recommendations."
+        )
+
+    # Fetch more jobs than needed for better recommendation quality
+    raw_jobs = await job_scraper_service.fetch_jobs(
+        search_query=None,
+        location=location,
+        skills=list(primary.skills or []) if primary else [],
+        job_title=None,
+        limit=limit * 2,  # Fetch more for better filtering
+    )
+
+    # Use the new recommendation engine
+    recommendations = job_matching_service.recommend_jobs_for_resume(
+        resume=primary,
+        jobs=raw_jobs,
+        top_k=top_k
+    )
+
+    return APIResponse(
+        success=True,
+        message=f"Found {len(recommendations)} personalized job match(es) based on your resume.",
+        data=recommendations
+    )
+
+
 @router.get("/live", response_model=APIResponse[List[JobMatchResponse]])
 async def search_live_jobs(
     search: Optional[str] = Query(None, description="Keywords e.g. python, react, backend, java"),
