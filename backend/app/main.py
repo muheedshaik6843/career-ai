@@ -30,7 +30,7 @@ async def lifespan(app: FastAPI):
         # Fallback: create tables directly - this will create all tables defined in models
         logger.info("Falling back to Base.metadata.create_all...")
         Base.metadata.create_all(bind=engine)
-        logger.info("Base.metadata.create_all completed")
+        logger.info("Base.metadata.create_all completed - tables created")
     
     yield
     
