@@ -10,7 +10,12 @@ from starlette.exceptions import HTTPException as StarletteHTTPException
 from app.core.config import settings
 from app.core.logging import logger
 from app.core.database import engine, Base
-import app.models  # Ensure all models are imported so they register on Base
+# Import all models explicitly to ensure they register on Base
+from app.models.user import User, UserRole
+from app.models.audit import AuditLog, TokenBlacklist
+from app.models.resume import Resume, ResumeStatus
+from app.models.job import JobDescription, JobMatch, JobApplication, ApplicationStatus
+from app.models.interview import InterviewSession
 from app.api.v1.router import api_router
 from app.schemas.common import APIResponse
 from alembic.config import Config
