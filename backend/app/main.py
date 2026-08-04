@@ -21,13 +21,16 @@ async def lifespan(app: FastAPI):
     # Startup: Run database migrations
     try:
         logger.info("Running database migrations...")
-        alembic_cfg = Config("alembic.ini")
+        # Ensure we're in the correct directory for alembic
+        alembic_cfg = Config(os.path.join(os.path.dirname(__file__), "..", "alembic.ini"))
         command.upgrade(alembic_cfg, "head")
         logger.info("Database migrations completed successfully")
     except Exception as e:
-        logger.warning(f"Migration failed (tables may already exist): {e}")
-        # Fallback: create tables directly
+        logger.warning(f"Alembic migration failed: {e}")
+        # Fallback: create tables directly - this will create all tables defined in models
+        logger.info("Falling back to Base.metadata.create_all...")
         Base.metadata.create_all(bind=engine)
+        logger.info("Base.metadata.create_all completed")
     
     yield
     
